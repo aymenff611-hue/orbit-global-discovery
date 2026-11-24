@@ -111,24 +111,23 @@ class SSRFProtection:
     """SSRF (Server-Side Request Forgery) protection."""
 
     PRIVATE_IP_RANGES = [
-        r"^127\.",                    # Loopback
         r"^10\.",                     # Class A private
         r"^172\.(1[6-9]|2[0-9]|3[01])\.",  # Class B private
         r"^192\.168\.",               # Class C private
         r"^169\.254\.",               # Link-local
-        r"^::1$",                     # IPv6 loopback
         r"^fc00:",                    # IPv6 unique local
         r"^fe80:",                    # IPv6 link-local
     ]
 
     BLOCKED_HOSTS = [
-        "localhost",
-        "127.0.0.1",
         "0.0.0.0",
-        "::1",
         "169.254.169.254",  # AWS metadata
         "169.254.170.2",    # Azure/GCP metadata
     ]
+
+    # Allow localhost for development/local testing.
+    # Set to False in production to block all loopback addresses.
+    ALLOW_LOCALHOST = False
 
     @classmethod
     def is_safe(cls, url: str) -> bool:
@@ -137,7 +136,17 @@ class SSRFProtection:
             parsed = urlparse(url)
             hostname = parsed.hostname or ""
 
-            # Block private IP ranges
+            # Block loopback only if localhost is not allowed
+            if not cls.ALLOW_LOCALHOST:
+                for pattern in [r"^127\.", r"^::1$"]:
+                    if re.match(pattern, hostname):
+                        logger.warning(f"SSRF blocked: private IP {hostname}")
+                        return False
+                if hostname.lower() in ("localhost", "127.0.0.1", "::1"):
+                    logger.warning(f"SSRF blocked: host {hostname}")
+                    return False
+
+            # Block private IP ranges (always)
             for pattern in cls.PRIVATE_IP_RANGES:
                 if re.match(pattern, hostname):
                     logger.warning(f"SSRF blocked: private IP {hostname}")

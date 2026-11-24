@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JS Job Board</title>
+    <script>
+        // Simulate JavaScript-rendered content
+        document.addEventListener('DOMContentLoaded', function() {
+            const content = `
+                <div class="js-listing">
+                    <h2>React Developer Needed (JS Rendered)</h2>
+                    <p>Looking for a React developer with 3+ years experience. Budget: $8000. Remote work.</p>
+                    <p>Posted: 2024-01-16 | Urgency: High</p>
+                </div>
+                <div class="js-listing">
+                    <h2>UX Designer Required</h2>
+                    <p>Seeking UX designer for mobile app. Rate: $75/hour.</p>
+                    <p>Posted: 2024-01-15</p>
+                </div>
+            `;
+            document.getElementById('js-content').innerHTML = content;
+        });
+    </script>
+</head>
+<body>
+    <h1>JavaScript Job Board</h1>
+    <div id="js-content">
+        <!-- Content loaded via JavaScript -->
+    </div>
+    <a href="../site1_static/index.html">Static Tech Directory</a>
+    <a href="../site3_arabic/index Arabic version">الخدمات العربية</a>
+</body>
+</html>

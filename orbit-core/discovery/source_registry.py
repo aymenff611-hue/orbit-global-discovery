@@ -124,6 +124,21 @@ class SourceRegistry:
         """Retrieve a source by ID."""
         return self._sources.get(source_id)
 
+    def get_source_by_url(self, url: str) -> Optional[Source]:
+        """Retrieve a source by URL."""
+        from urllib.parse import urlparse
+        normalized = url.strip().lower()
+        if normalized.endswith("/") and len(normalized) > 1:
+            normalized = normalized[:-1]
+        for source in self._sources.values():
+            if source.url:
+                source_url = str(source.url).strip().lower()
+                if source_url.endswith("/") and len(source_url) > 1:
+                    source_url = source_url[:-1]
+                if source_url == normalized:
+                    return source
+        return None
+
     def get_sources_by_domain(self, domain: str) -> List[Source]:
         """Get all sources for a domain."""
         domain_key = domain.lower()
