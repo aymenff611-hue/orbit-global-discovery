@@ -1,0 +1,124 @@
+# ORBIT Core Docker Compose
+# Local development and single-node deployment
+
+version: "3.8"
+
+services:
+  orbit-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: orbit-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ORBIT_API_HOST=0.0.0.0
+      - ORBIT_API_PORT=8000
+      - ORBIT_API_WORKERS=4
+      - ORBIT_DATABASE_URL=postgresql://orbit:orbit@orbit-db:5432/orbit
+      - ORBIT_QUEUE_BROKER_URL=redis://orbit-redis:6379/0
+      - ORBIT_QUEUE_RESULT_BACKEND=redis://orbit-redis:6379/1
+      - ORBIT_SEARCH_ENGINE_URL=http://orbit-search:9200
+      - ORBIT_GRAPH_URI=bolt://orbit-graph:7687
+      - ORBIT_GRAPH_USER=neo4j
+      - ORBIT_GRAPH_PASSWORD=orbit-graph
+      - ORBIT_CRAWL_MAX_CONCURRENT_WORKERS=100
+      - ORBIT_CRAWL_PER_HOST_CONCURRENCY=2
+      - ORBIT_CRAWL_PER_HOST_DELAY_SECONDS=1.0
+      - ORBIT_CRAWL_RESPECT_ROBOTS_TXT=true
+      - ORBIT_STORAGE_HOT_RETENTION_DAYS=30
+      - ORBIT_STORAGE_WARM_RETENTION_DAYS=365
+    depends_on:
+      - orbit-db
+      - orbit-redis
+      - orbit-search
+      - orbit-graph
+    volumes:
+      - orbit-data:/data/orbit
+    networks:
+      - orbit-network
+    restart: unless-stopped
+
+  orbit-db:
+    image: postgres:15-alpine
+    container_name: orbit-db
+    environment:
+      - POSTGRES_USER=orbit
+      - POSTGRES_PASSWORD=orbit
+      - POSTGRES_DB=orbit
+    volumes:
+      - orbit-db-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - orbit-network
+    restart: unless-stopped
+
+  orbit-redis:
+    image: redis:7-alpine
+    container_name: orbit-redis
+    volumes:
+      - orbit-redis-data:/data
+    networks:
+      - orbit-network
+    restart: unless-stopped
+
+  orbit-search:
+    image: elasticsearch:8.15.0
+    container_name: orbit-search
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    volumes:
+      - orbit-search-data:/usr/share/elasticsearch/data
+    networks:
+      - orbit-network
+    restart: unless-stopped
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  orbit-graph:
+    image: neo4j:5.23.0
+    container_name: orbit-graph
+    environment:
+      - NEO4J_AUTH=neo4j/orbit-graph
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4JLABS_PLUGINS=["apoc"]
+    volumes:
+      - orbit-graph-data:/data
+    networks:
+      - orbit-network
+    restart: unless-stopped
+
+  orbit-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: orbit-worker
+    command: >
+      sh -c "pip install celery && celery -A orbit.queue.worker worker --loglevel=info"
+    environment:
+      - ORBIT_QUEUE_BROKER_URL=redis://orbit-redis:6379/0
+      - ORBIT_QUEUE_RESULT_BACKEND=redis://orbit-redis:6379/1
+      - ORBIT_DATABASE_URL=postgresql://orbit:orbit@orbit-db:5432/orbit
+    depends_on:
+      - orbit-db
+      - orbit-redis
+    volumes:
+      - orbit-data:/data/orbit
+    networks:
+      - orbit-network
+    restart: unless-stopped
+
+volumes:
+  orbit-db-data:
+  orbit-redis-data:
+  orbit-search-data:
+  orbit-graph-data:
+  orbit-data:
+
+networks:
+  orbit-network:
+    driver: bridge
