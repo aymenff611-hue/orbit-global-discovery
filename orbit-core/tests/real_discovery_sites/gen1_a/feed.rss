@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+    <title>Alpha Tech Jobs RSS</title>
+    <link>/gen1_a/index.html</link>
+    <description>Latest startup job postings</description>
+    <item>
+        <title>Mobile App Developer (iOS)</title>
+        <link>/gen2_e/index.html</link>
+        <description>Native iOS developer needed. Budget: $95000.</description>
+        <pubDate>Mon, 05 Feb 2024 08:00:00 GMT</pubDate>
+    </item>
+    <item>
+        <title>Backend Engineer (Go)</title>
+        <link>/gen2_e/index.html</link>
+        <description>Go backend engineer for microservices. Rate: $105/hour.</description>
+        <pubDate>Mon, 05 Feb 2024 09:00:00 GMT</pubDate>
+    </item>
+</channel>
+</rss>

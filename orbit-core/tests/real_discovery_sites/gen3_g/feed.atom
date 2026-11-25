@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Omega Global Talent Feed</title>
+    <link href="/gen3_g/index.html"/>
+    <updated>2024-02-09T10:00:00Z</updated>
+    <id>/gen3_g/index.html</id>
+    <entry>
+        <title>Cloud Architect</title>
+        <link href="/gen0_seed/index.html"/>
+        <updated>2024-02-09T08:00:00Z</updated>
+        <id>/gen0_seed/index.html</id>
+        <content>Cloud architect with AWS/Azure. Budget: $150000.</content>
+    </entry>
+    <entry>
+        <title>Site Reliability Engineer</title>
+        <link href="/gen1_a/index.html"/>
+        <updated>2024-02-09T09:00:00Z</updated>
+        <id>/gen1_a/index.html</id>
+        <content>SRE with Kubernetes experience. Rate: $120/hour.</content>
+    </entry>
+</feed>

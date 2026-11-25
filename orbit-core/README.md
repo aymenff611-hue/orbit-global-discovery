@@ -12,27 +12,42 @@ The central discovery principle:
 
 ## Status
 
-**ORBIT CORE — READY FOR SERVICE AND CUSTOMER CONFIGURATION.**
+**ORBIT CORE — IMPLEMENTED AND TESTED.**
 
-The system is implemented, tested, and documented. The maximum design envelope (100M pages/day, 1B candidate URLs/day, 100M domains) remains documented even if initial infrastructure cannot reach it.
+Core discovery pipeline, source registry, URL frontier, recursive discovery engine,
+HTTP crawler, content extraction, demand detection, knowledge graph, and adaptive
+discovery are implemented and verified with unit tests and end-to-end tests.
+
+Real discovery validation (genuine HTML link extraction, sitemap/RSS/Atom/robots.txt
+discovery, recursive expansion across 3+ generations, adaptive discovery with measured
+metrics, JavaScript-rendered page handling, multi-language Arabic/English support) is
+verified in `tests/real_discovery_test.py` (54 assertions, all passing).
+
+A realistic controlled pilot measuring throughput, yield, extraction, detection,
+false positives, evidence completeness, and resource consumption is in
+`tests/realistic_pilot_test.py`.
+
+The maximum design envelope (100M pages/day, 1B candidate URLs/day, 100M domains)
+remains an engineering target — not yet measured at scale.
 
 ## Architecture
 
-ORBIT CORE consists of 30 native components organized into these modules:
+ORBIT CORE consists of native components organized into these modules:
 
 | Module | Components |
 |--------|-----------|
 | `core/` | Data models, evidence/provenance, monitoring, adaptive discovery, workflow recovery, security |
-| `discovery/` | Source registry, URL frontier, recursive discovery engine |
-| `crawler/` | HTTP crawler with robots.txt, SSRF protection, per-host politeness |
+| `discovery/` | Source registry, URL frontier, recursive discovery engine, real discovery methods (link, sitemap, feed, canonical, relationships), URL utilities |
+| `crawler/` | HTTP crawler with robots.txt, SSRF protection, per-host politeness; browser crawler |
 | `extractor/` | Content extraction (trafilatura, readability, BeautifulSoup) |
-| `classifier/` | Demand detection, buyer intent classification (tiered) |
+| `classifier/` | Demand detection, buyer intent classification (tiered), competition intelligence |
 | `graph/` | Knowledge graph with entities, relationships, provenance |
 | `storage/` | Hot/warm/cold data store with compression, deduplication, retention |
-| `queue/` | Distributed task queue with backpressure, idempotency, dead-letter |
+| `taskq/` | Distributed task queue with backpressure, idempotency, dead-letter |
 | `api/` | FastAPI control plane API |
 | `benchmarks/` | Benchmark suite with claim-type classification |
 | `config/` | Environment-driven configuration |
+| `tests/` | Unit tests, e2e pipeline test, real discovery test, realistic pilot test |
 
 ## Quick Start
 
@@ -40,24 +55,28 @@ ORBIT CORE consists of 30 native components organized into these modules:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/orbit-global-discovery.git
-cd orbit-global-discovery
+git clone https://github.com/aymenff611-hue/orbit-global-discovery.git
+cd orbit-core
 
 # Install dependencies
-pip install -r requirements.txt
+pip install pydantic pydantic-settings httpx scikit-learn numpy trafilatura \
+    readability-lxml beautifulsoup4
 
-# Copy environment configuration
-cp .env.example .env
-# Edit .env with your settings
+# Run unit tests
+python -m pytest tests/test_core.py -v
 
-# Start dependencies (Docker Compose)
-docker-compose -f deployment/docker-compose.yml up -d
+# Run real discovery validation test (requires local HTTP server on port 8889)
+python3 -m http.server 8889 --directory tests/real_discovery_sites &
+python3 tests/real_discovery_test.py
+
+# Run realistic controlled pilot
+python3 tests/realistic_pilot_test.py
 
 # Run the API
-python -m uvicorn orbit-core.api.main:app --host 0.0.0.0 --port 8000
+python3 -m uvicorn api.main:app --host 0.0.0.0 --port 8000
 
 # Open API documentation
-# http://localhost:8000/api/v1/docs
+# http://localhost:8000/docs
 ```
 
 ### Docker
@@ -142,7 +161,7 @@ orbit-core/
 ├── classifier/        # Demand detection & intent
 ├── graph/             # Knowledge graph
 ├── storage/           # Data lifecycle storage
-├── queue/             # Distributed task queue
+├── taskq/             # Distributed task queue (renamed from queue/)
 ├── api/               # Control plane API
 ├── benchmarks/        # Benchmark suite
 ├── config/            # Configuration
