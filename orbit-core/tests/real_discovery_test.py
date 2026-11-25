@@ -597,6 +597,10 @@ async def test_recursive_expansion(crawler: HTTPCrawler,
             gen_metrics["urls_extracted"] += len(links)
             log(f"      Extracted {len(links)} links")
 
+            # Record crawl result (real observed data)
+            registry.record_crawl(source.id, success=True, pages_found=1,
+                                   opportunities_found=0)
+
             # Extract content and detect opportunities
             extracted = extractor.extract(url_str, html)
             if extracted.extracted_text and len(extracted.extracted_text) > 20:
@@ -610,7 +614,7 @@ async def test_recursive_expansion(crawler: HTTPCrawler,
                     log(f"      ✓ Opportunity: score={detect_result.buying_intent_score:.2f}, "
                         f"confidence={detect_result.confidence_score:.2f}")
 
-                    # Record evidence
+                    # Record evidence (persisted traceable evidence)
                     ev = evidence.record_evidence(
                         source_id=source.id,
                         source_url=url_str,
@@ -620,6 +624,9 @@ async def test_recursive_expansion(crawler: HTTPCrawler,
                     assert_true("Evidence recorded for opportunity",
                                 ev is not None and ev.evidence_id is not None,
                                 {})
+
+                    # Record opportunity back to source (closes adaptive evidence gap)
+                    registry.record_opportunity(source.id)
 
             # Process each link
             for link in links:

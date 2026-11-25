@@ -191,11 +191,18 @@ class SourceRegistry:
             source.yield_score = source.opportunities_found / max(source.crawl_count, 1)
 
     def record_opportunity(self, source_id: UUID):
-        """Record that a source produced a qualified opportunity."""
+        """Record that a source produced a qualified opportunity.
+
+        Persists the opportunity count and recalculates yield_score
+        so that adaptive resource allocation reflects actual observed
+        source performance (not artificial counters).
+        """
         source = self._sources.get(source_id)
         if source:
             source.opportunities_found += 1
             source.updated_at = utc_now()
+            # Recalculate yield from real observed data
+            source.yield_score = source.opportunities_found / max(source.crawl_count, 1)
 
     def get_stats(self) -> Dict[str, Any]:
         """Get registry statistics."""

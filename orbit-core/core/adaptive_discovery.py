@@ -141,11 +141,14 @@ class AdaptiveDiscoveryEngine:
         # Cost-effectiveness: opportunities per crawl
         cost_effectiveness = source.opportunities_found / max(source.crawl_count, 1)
 
+        def _enum_val(x):
+            return x.value if hasattr(x, 'value') else x
+
         return {
             "source_id": str(source_id),
             "domain": source.domain,
-            "source_type": source.source_type.value,
-            "status": source.status.value,
+            "source_type": _enum_val(source.source_type),
+            "status": _enum_val(source.status),
             "yield_score": yield_score,
             "quality_score": quality_score,
             "freshness_score": freshness_score,
@@ -188,6 +191,10 @@ class AdaptiveDiscoveryEngine:
     def allocate_resources(self, total_budget: int = 1000) -> List[SourceAllocation]:
         """Allocate crawling resources across sources using adaptive strategy.
 
+        Allocation is based only on persisted, observed source performance:
+        yield_score (opportunities per crawl), quality_score, freshness_score,
+        and cost-effectiveness. No artificial or manually assigned values.
+
         Args:
             total_budget: Total pages per day budget across all sources
 
@@ -200,10 +207,13 @@ class AdaptiveDiscoveryEngine:
         if (now - self._last_rebalance).total_seconds() < self.rebalance_interval:
             return list(self._allocations.values())
 
-        # Get all active and useful sources
-        active_sources = self.registry.get_sources_by_status(SourceStatus.ACTIVE)
-        useful_sources = self.registry.get_sources_by_status(SourceStatus.USEFUL)
-        candidate_sources = list(set(active_sources + useful_sources))
+        # Consider sources at all lifecycle stages that have been crawled
+        # at least once, so yield is based on real observed performance.
+        all_sources = list(self.registry._sources.values())
+        candidate_sources = [
+            s for s in all_sources
+            if s.crawl_count > 0 or s.discovery_generation == 0
+        ]
 
         if not candidate_sources:
             self._last_rebalance = now
